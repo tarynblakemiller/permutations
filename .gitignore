@@ -1,0 +1,17 @@
+# Teensy
+.DS_Store
+.build/
+build/
+*.hex
+*.elf
+*.bin
+
+# IDE
+.pioenvs/
+.vscode/
+.idea/
+
+# Compiled objects
+*.o
+*.a
+*.d
