@@ -5,99 +5,90 @@
 #include <SerialFlash.h>
 #include "AudioStem.h"
 
-//channel definitions
+// Channel definitions
 static constexpr auto LEFT_CHANNEL = 0U;
 static constexpr auto RIGHT_CHANNEL = 1U;
 
-AudioPlaySdWav sd_wav_player;
-AudioOutputI2S i2s0;
-//AudioMixer4 mixer1;
-//AudioMixer4 mixer2;
-AudioAmplifier amp_left;
-AudioAmplifier amp_right;
+// Audio objects
+AudioPlaySdWav wav_player_0;
+AudioPlaySdWav wav_player_1;
+AudioOutputI2S i2s_output;
+AudioMixer4 mixer_left;
+AudioMixer4 mixer_right;
 
-////mixer
-//AudioConnection patchCord1(sd_wav_player, 0, mixer1, 0);
-//AudioConnection patchCord2(sd_wav_player, 0, mixer2, 1);
-//
-////I2S
-//AudioConnection patchCord3(mixer1, 0, i2s0, 0);
-//AudioConnection patchCord3(mixer2, 0, i2s0, 1);
+// Connections for first WAV player
+AudioConnection patch_wav_player_0_mixer_L{wav_player_0, LEFT_CHANNEL, mixer_left, 0};
+AudioConnection patch_wav_player_0_mixer_R{wav_player_0, RIGHT_CHANNEL, mixer_right, 0};
 
-AudioConnection patch_sd_to_amp_left{sd_wav_player, LEFT_CHANNEL, amp_left, 0};
-AudioConnection patch_sd_to_amp_right{sd_wav_player, RIGHT_CHANNEL, amp_right, 0};
-AudioConnection patch_amp_to_output_left{amp_left, 0, i2s0, LEFT_CHANNEL};
-AudioConnection patch_amp_to_output_right{amp_right, 0, i2s0, RIGHT_CHANNEL};
+// Connections for second WAV player
+AudioConnection patch_wav_player_1_mixer_L{wav_player_1, LEFT_CHANNEL, mixer_left, 1};
+AudioConnection patch_wav_player_1_mixer_R{wav_player_1, RIGHT_CHANNEL, mixer_right, 1};
 
-// Create our AudioStem object
-AudioStem stem1(1, "SO1SLOWA.WAV");
+// Connections from mixer to output
+AudioConnection patch_mixer_to_output_left{mixer_left, 0, i2s_output, LEFT_CHANNEL};
+AudioConnection patch_mixer_to_output_right{mixer_right, 0, i2s_output, RIGHT_CHANNEL};
 
-// Test sequence state
-unsigned long lastStateTime = 0;
-int testState = 0;
+// Create AudioStem objects
+AudioStem stem1(1, "SO1SLOWA.WAV", &wav_player_0, &mixer_left, &mixer_right, 0);
+AudioStem stem2(2, "SO1MARBL.WAV", &wav_player_1, &mixer_left, &mixer_right, 1);
 
-
-auto setup_audio() -> void
-{
-  AudioMemory(50);
-//  mixer1.gain(0.9);
-//  mixer2.gain(0.9);
-  amp_left.gain(0.0);
-  amp_right.gain(0.0);
+auto setup_audio() -> void {
+    AudioMemory(20); // Increased for stability
+    Serial.println("Audio memory allocated: 150 blocks");
 }
 
-auto setup_sd() -> void
-{
-  SD.begin(BUILTIN_SDCARD);
+auto setup_sd() -> void {
+    if (!SD.begin(BUILTIN_SDCARD)) {
+        Serial.println("SD card initialization failed!");
+        while (1); // Halt if SD fails
+    } else {
+        Serial.println("SD card initialized successfully");
+    }
 }
 
-auto setup() -> void
-{
-  Serial.begin(9600);
-  Serial.println("Starting Permutations Test");
-  
-  setup_audio();
-  setup_sd();
+auto setup() -> void {
+    Serial.begin(9600);
+    delay(1000); // Give Serial time to initialize
+    Serial.println("Starting Permutations Test");
+    setup_audio();
+    setup_sd();
+}
 
-  lastStateTime = millis(); 
- }
+auto loop() -> void {
+    static bool stem1_started = false;
+    static bool stem2_started = false;
 
+    // Update stems for fading
+    stem1.update();
+    stem2.update();
 
-auto loop() -> void
-{
-   // Update stem to handle fading
-  stem1.update();
-  
-  // Simple test sequence
-  unsigned long currentTime = millis();
+    // Debug CPU usage
+    Serial.print("Audio CPU Usage: ");
+    Serial.println(AudioProcessorUsage());
+    Serial.println(AudioMemoryUsage());
+    Serial.println(AudioMemoryUsageMax());
 
-  
-  switch (testState) {
-    case 0:  // Start with fade in
-      if (currentTime - lastStateTime > 2000) {
-        Serial.println("Starting fade in (5 seconds)");
-        stem1.fadeIn(5000);
-        testState = 1;
-        lastStateTime = currentTime;
-      }
-      break;
-      
-    case 1:  // Wait for a while at full volume
-      if (currentTime - lastStateTime > 10000) {
-        Serial.println("Starting fade out (3 seconds)");
-        stem1.fadeOut(3000);
-        testState = 2;
-        lastStateTime = currentTime;
-      }
-      break;
-      
-    case 2:  // Wait until finished, then restart
-      if (!stem1.isPlaying() && currentTime - lastStateTime > 5000) {
-        Serial.println("Restarting test sequence");
-        testState = 0;
-        lastStateTime = currentTime;
-      }
-      break;
-  
- }
+    // Play first WAV file
+    if (!stem1.isPlaying() && !stem1_started) {
+        Serial.println("Playing first WAV file");
+        stem1.fadeIn(5000); // 5-second fade-in
+        stem1_started = true;
+    }
+
+    // Play second WAV file after 3 seconds
+    if (!stem2.isPlaying() && !stem2_started && millis() > 3000) {
+        Serial.println("Playing second WAV file");
+        stem2.fadeIn(5000); // 5-second fade-in
+        stem2_started = true;
+    }
+
+    // Monitor playback status
+    if (stem1.isPlaying() || stem2.isPlaying()) {
+        Serial.println("At least one stem is playing");
+    } else if (stem1_started || stem2_started) {
+        Serial.println("Both stems finished, restarting in 3 seconds");
+        delay(3000);
+        stem1_started = false;
+        stem2_started = false;
+    }
 }
