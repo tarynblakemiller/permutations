@@ -1,5 +1,6 @@
 #include "Stems.h"
 
+// Declare the stems array
 Stem stems[] = {
   {"SO1POOLPORTAL.WAV", 1, true, false, 0.5, 0.5, 0.8},
   {"SO2SLOWA.WAV", 2, false, false, 0.0, 0.0, 0.7},
