@@ -8,7 +8,9 @@
 AudioPlaySdWav playWav1, playWav2, playWav3, playWav4, playWav5, playWav6;
 AudioMixer4 mixer1, mixer2, mixer3, mixer4, mixer5, mixer6;
 AudioMixer4 mainMixer1, mainMixer2;
+
 AudioOutputI2S i2s_output;
+AudioOutputI2S i2s_output2;
 
 AudioConnection patchCord1(playWav1, 0, mixer1, 0);
 AudioConnection patchCord2(playWav2, 0, mixer2, 0);
@@ -16,14 +18,21 @@ AudioConnection patchCord3(playWav3, 0, mixer3, 0);
 AudioConnection patchCord4(playWav4, 0, mixer4, 0);
 AudioConnection patchCord5(playWav5, 0, mixer5, 0);
 AudioConnection patchCord6(playWav6, 0, mixer6, 0);
+
 AudioConnection patchCord9(mixer1, 0, mainMixer1, 0);
 AudioConnection patchCord10(mixer2, 0, mainMixer1, 1);
 AudioConnection patchCord11(mixer3, 0, mainMixer1, 2);
 AudioConnection patchCord12(mixer4, 0, mainMixer1, 3);
 AudioConnection patchCord13(mixer5, 0, mainMixer2, 0);
 AudioConnection patchCord14(mixer6, 0, mainMixer2, 1);
+
+//Left channel to both i2s outputs
 AudioConnection patchCord17(mainMixer1, 0, i2s_output, 0);
+AudioConnection patchCord19(mainMixer1, 0, i2s_output2, 0);
+
+//Right channel to both i2s outputs
 AudioConnection patchCord18(mainMixer2, 0, i2s_output, 1);
+AudioConnection patchCord20(mainMixer2, 0, i2s_output2, 1);
 
 //externals
 extern AudioPlayer players[];
@@ -35,7 +44,11 @@ unsigned long sequenceStartTime = 0;
 int sequenceCount = 0; 
 
 void setup() {
-    AudioMemory(20);
+    AudioMemory(30);
+
+    //seeds random number
+    randomSeed(analogRead(A0));
+
     SPI.setMOSI(7);
     SPI.setSCK(14);
     if(!SD.begin(BUILTIN_SDCARD)) {
@@ -49,6 +62,7 @@ void setup() {
   mainMixer2.gain(1, 1.0);
   mainMixer2.gain(2, 1.0);
   mainMixer2.gain(3, 1.0);
+
   sequenceStartTime = millis();
 }
 
@@ -65,7 +79,7 @@ void loop() {
       players[i].currentStemId = -1;
     }
   }
-  delay(10);
+  delay(5);
 }
 
 void assignNewStem(int playerIndex) {
