@@ -4,7 +4,7 @@
 Stem stems[] = {
   {"SO1POOLPORTAL.WAV", 1, true, false, 0.5, 0.5, 0.8},
   {"SO2SLOWA.WAV", 2, false, false, 0.0, 0.0, 0.7},
-  {"SO3PIGMENTGRAN.WAV", 3, true, true, 0.5, 0.5, 0.9},
+  {"SO3PIGMENTGRAN.WAV", 3, true, false, 0.5, 0.5, 0.9},
   {"SO4OIGDAD.WAV", 4, false, false, 0.0, 0.0, 0.7},
   {"SO5NEUPATHB.WAV", 5, true, false, 0.5, 0.5, 0.8},
   {"SO6NEURPATHA.WAV", 6, true, false, 0.0, 0.0, 0.7},
