@@ -13,7 +13,6 @@ public:
   unsigned long startTime;
   float fadeInTime;
   float fadeOutTime;
-  unsigned long startOffset;
   float volume;
 
   AudioPlayer(AudioPlaySdWav* w, AudioMixer4* m, AudioConnection* c);
